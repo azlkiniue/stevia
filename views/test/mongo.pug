@@ -1,0 +1,28 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    meta(http-equiv="X-UA-Compatible", content="ie=edge")
+    title Document
+  body
+  script(src='/socket.io/socket.io.js')
+  script.
+    var socket = io();
+    var count = 0;
+    var numSec = 1;
+    var start = 0;
+    getCPS();
+
+    function getCPS() {
+      setTimeout(function() {
+        console.log(count);
+        count = 0;
+        getCPS();
+      }, numSec*1000);
+    }
+
+    socket.on('mongoStream', function (data) {
+        count++;
+        console.log(data);
+    });
