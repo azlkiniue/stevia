@@ -5,8 +5,16 @@ router.get('/test', function(req, res, next) {
   res.render('test/test');
 });
 
-router.get('/testv4', function(req, res, next) {
-  res.render('test/testv4');
+router.get('/pulse', function(req, res, next) {
+  res.render('test/pulseTest');
+});
+
+router.get('/slider', function(req, res, next) {
+  res.render('test/sliderTest');
+});
+
+router.get('/timeline', function(req, res, next) {
+  res.render('test/timelineTest');
 });
 
 router.get('/mongo', function(req, res, next) {
