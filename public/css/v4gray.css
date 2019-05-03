@@ -2,11 +2,45 @@
   fill: #fff;
 }
 body, .header, .content {
-  background-color: #999;
+  background-color: rgb(19, 19, 19);
 }
 a, a:hover, a:focus {
   color: #fff;
 }
 h1, h2, h3, h4, h5, p {
   color: #fff;
+}
+.countries {
+  fill: rgb(75, 75, 75);
+  stroke: #fff;
+  stroke-width: 0.5px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.airports {
+  fill: #036;
+  stroke: #6cb0e0;
+  stroke-width: 0.5px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.route {
+  fill: none;
+  stroke: rgb(223, 223, 223);
+  stroke-width: 0;
+}
+
+.trail {
+  fill: none;
+  stroke: rgb(252, 252, 252);
+  stroke-width: 1;
+}
+
+.plane {
+  fill: #000;
+  stroke-width: 0;
 }

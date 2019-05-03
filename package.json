@@ -6,19 +6,19 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
-    "appmetrics-dash": "^4.0.0",
-    "bootstrap": "^4.2.1",
-    "cookie-parser": "~1.4.3",
-    "d3": "^5.7.0",
+    "appmetrics-dash": "^4.1.0",
+    "bootstrap": "^4.3.1",
+    "cookie-parser": "^1.4.4",
+    "d3": "^5.9.2",
     "debug": "~2.6.9",
     "express": "~4.16.0",
     "http-errors": "~1.6.2",
     "inject-tunnel-ssh": "0.0.5",
-    "jquery": "^3.3.1",
-    "mongodb": "^3.1.10",
+    "jquery": "^3.4.0",
+    "mongodb": "^3.2.3",
     "morgan": "~1.9.0",
-    "popper.js": "^1.14.6",
-    "pug": "2.0.0-beta11",
+    "popper.js": "^1.15.0",
+    "pug": "^2.0.3",
     "socket.io": "^2.2.0",
     "tunnel-ssh": "^4.1.4"
   }
