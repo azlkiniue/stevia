@@ -1,0 +1,420 @@
+doctype html
+html
+  head
+    meta(charset='utf-8')
+    link(rel='stylesheet', href='../css/bootstrap.min.css')
+    link(rel='stylesheet', href='../css/v4.css')
+    script(src='../js/jquery.min.js')
+    script(src='../js/bootstrap.min.js')
+    title History
+    link(rel='stylesheet', href='../css/v4gray.css')
+    style.
+      @media(max-width: 768px) {
+        #map {
+          margin-top: -100px;
+        }
+      }
+
+      @media(min-width: 768px) {
+        #map {
+          margin-top: -300px;
+        }
+      }
+
+      body {
+        font-family: "avenir next", Arial, sans-serif;
+        font-size: 12px;
+        color: #696969;
+      }
+
+      //- #play-button {
+      //-   position: relative;
+      //-   top: 140px;
+      //-   left: 50px;
+      //-   background: #f08080;
+      //-   padding-right: 26px;
+      //-   border-radius: 3px;
+      //-   border: none;
+      //-   color: white;
+      //-   margin: 0;
+      //-   padding: 0 12px;
+      //-   width: 60px;
+      //-   cursor: pointer;
+      //-   height: 30px;
+      //- }
+
+      #play-button:hover {
+        background-color: #696969;
+      }
+
+      .ticks {
+        font-size: 10px;
+      }
+
+      .track,
+      .track-inset,
+      .track-overlay {
+        stroke-linecap: round;
+      }
+
+      .track {
+        stroke: #000;
+        stroke-opacity: 0.3;
+        stroke-width: 10px;
+      }
+
+      .track-inset {
+        stroke: #dcdcdc;
+        stroke-width: 8px;
+      }
+
+      .track-overlay {
+        pointer-events: stroke;
+        stroke-width: 50px;
+        stroke: transparent;
+        cursor: crosshair;
+      }
+
+      .handle {
+        fill: #fff;
+        stroke: #000;
+        stroke-opacity: 0.5;
+        stroke-width: 1.25px;
+      }
+  body
+    .header
+    .content
+      .container
+        #map
+        #vis
+          button#play-button.btn.btn-primary.mr-5 Play
+    .footer
+    
+    script(src='/socket.io/socket.io.js')
+    script(src='../js/d3.v4.min.js')
+    script(src='../js/queue.v1.min.js')
+    script(src='../js/topojson.v1.min.js')
+    script.
+      var useDummy = false;
+
+      var currentWidth = $('#map').width();
+      var width = 938;
+      var height = 620;
+
+      var projection = d3.geoMercator()
+                        .scale(150)
+                        .translate([width / 2, height / 1.41]);
+
+      var path = d3.geoPath()
+                  .pointRadius(2)
+                  .projection(projection);
+        
+      var svg = d3.select("#map")
+                  .append("svg")
+                  .attr("preserveAspectRatio", "xMidYMid")
+                  .attr("viewBox", "0 0 " + width + " " + height)
+                  .attr("width", currentWidth)
+                  .attr("height", currentWidth * height / width);
+
+      if(useDummy){
+        var capitalCities = [];
+      } else {
+        var capitalCities = {};
+      }
+
+       function delta(plane, path) {
+         var l = path.getTotalLength();
+         var plane = plane;
+         return function(i) {
+           return function(t) {
+             var p = path.getPointAtLength(t * l);
+
+            var t2 = Math.min(t + 0.05, 1);
+            var p2 = path.getPointAtLength(t2 * l);
+
+            var x = p2.x - p.x;
+            var y = p2.y - p.y;
+            var r = 90 - Math.atan2(-y, x) * 180 / Math.PI;
+
+            var s = Math.min(Math.sin(Math.PI * t) * 0.7, 0.3);
+
+            return "translate(" + p.x + "," + p.y + ") scale(" + s + ") rotate(" + r + ")";
+          }
+        }
+      }
+
+      function trailDelta() {
+        var l = this.getTotalLength(),
+            i = d3.interpolateString("0," + l, l + "," + l);
+        return function(t) { return i(t); };
+      }
+
+      function transition(plane, route, trail) {
+        var l = route.node().getTotalLength();
+        var duration = l*5;
+        //- plane.transition()
+        //-     .duration(l * 5)
+        //-     .attrTween("transform", delta(plane, route.node()))
+        //-     //- .each("end", destinationPulse(route, this))
+        //-     .remove();
+            
+        trail.transition()
+            .duration(duration)
+            .attrTween("stroke-dasharray", trailDelta)
+            .on("end", destinationPulse(route, duration))
+            .remove();     
+      }
+
+      function destinationPulse(route, delayDuration){
+        let dataCircle = route.datum();
+        let pointDestination = projection(dataCircle.coordinates[1]);
+          
+        svg.append("circle")
+          .datum(dataCircle)
+          .attr("cx", pointDestination[0])
+          .attr("cy", pointDestination[1])
+          .attr("r", 0)
+          .style("class", "destCircleMouse")
+          .style("fill", "white")
+          .style("fill-opacity", "1")
+          .transition()
+          .delay(delayDuration)
+          .duration(100)
+          .attr("r", "3px")
+          .on("end", function (d) {
+            d3.select(this)
+              .transition()
+              .duration(500)
+              .attr("r", 10) // circle radius end
+              .style("fill-opacity", "0")
+              .on("end", function() { 
+                this.remove(); 
+              })
+          });
+
+          route.remove();
+      }
+        
+      var defaultCity = "Indonesia";
+
+      function fly(origin, destination) {
+        if(origin == "UNDEFINED")
+          origin = defaultCity;
+        if(destination == "UNDEFINED")
+          destination = defaultCity;
+
+        var route = svg.append("path")
+                      .datum({type: "LineString", coordinates: [capitalCities[origin], capitalCities[destination]]})
+                      .attr("class", "route")
+                      .attr("d", path);
+          
+        var trail = svg.append("path")
+                      .datum({type: "LineString", coordinates: [capitalCities[origin], capitalCities[destination]]})
+                      .attr("class", "trail")
+                      .attr("d", path);               
+
+        var plane = svg.append("path")
+                      .attr("class", "plane")
+                      .attr("d", "M-3.837,3.457l-24.399,48.587c-2.322,4.625-0.149,7.31,4.856,5.994L0.366,51.8l22.979,6.185    c5.001,1.346,7.202-1.333,4.923-5.982L4.497,3.499C2.217-1.15-1.515-1.168-3.837,3.457z")
+                      .attr("width", "20px")
+                      .attr("height", "20px");
+
+        transition(plane, route, trail);
+      }
+
+      function flyRandom(){
+        let rand1 = Math.floor(Math.random() * Math.floor(240));
+        let rand2 = Math.floor(Math.random() * Math.floor(240));
+        let rand1test = rand1 == 226 || rand1 == 227;
+        let rand2test = rand2 == 226 || rand2 == 227;
+        if(rand1 != rand2 && !rand1test && !rand2test)
+          fly(rand1, rand2);
+      }
+
+      function flyX(d){
+        //data = JSON.parse(d);
+        //- console.log(d.src_country, d.dest_country);
+        fly(d.src_country, d.dest_country);
+      }
+
+      function loaded(error, countries, airports) {
+        svg.append("g")
+          .attr("class", "countries")
+          .selectAll("path")
+          .data(topojson.feature(countries, countries.objects.countries).features)
+          .enter()
+          .append("path")
+          .attr("d", path);
+
+        svg.append("g")
+          .attr("class", "airports")
+          .selectAll("path")
+          .data(topojson.feature(airports, airports.objects.capitals).features)
+          .enter()
+          .append("path")
+          .attr("id", function(d) {return d.id;})
+          .attr("d", path);
+
+        var geos = topojson.feature(airports, airports.objects.capitals).features;
+        for (i in geos) {
+          if(useDummy){
+            capitalCities[i] = geos[i].geometry.coordinates;
+          } else {
+            capitalCities[geos[i].properties.country] = geos[i].geometry.coordinates;
+          }
+        }
+        var lenCapitalCities = capitalCities.length;
+        console.log(geos);
+        
+        if(useDummy){
+          //- setInterval(function() {
+          //-   //- flyRandom();
+          //-   console.log("s")
+          //- }, 100);
+        } else {
+          //- var socket = io();
+          //- socket.on('mongoStream', function (data) {
+          //-     console.log(data.fullDocument.src_country, data.fullDocument.dest_country);
+          //-     fly(data.fullDocument.src_country, data.fullDocument.dest_country);
+          //- });
+        }
+      }
+      
+      $(function() {
+        queue().defer(d3.json, "../json/countries2.topo.json")
+              .defer(d3.json, "../json/capitals.topo.json")
+              .await(loaded);
+
+        $(window).resize(function() {
+          currentWidth = $("#map").width();
+          svg.attr("width", currentWidth);
+          svg.attr("height", currentWidth * height / width);
+        });
+      });
+
+    script.
+      src = {};
+      var formatDateIntoYear = d3.timeFormat("%Y");
+      var formatDate = d3.timeFormat("%b %Y");
+      var parseDate = d3.timeParse("%m/%d/%y");
+      var startDate = new Date("2004-11-01"),
+        endDate = new Date("2017-04-01");
+      var margin = { top: 0, right: 50, bottom: 0, left: 30 },
+        width = 960 - margin.left - margin.right,
+        height = 100 - margin.top - margin.bottom;
+      var vis = d3.select("#vis")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom);
+      ////////// slider //////////
+      var moving = false;
+      var currentValue = 0;
+      var targetValue = width;
+      var playButton = d3.select("#play-button");
+      var x = d3.scaleTime()
+        .domain([startDate, endDate])
+        .range([0, targetValue])
+        .clamp(true);
+      var slider = vis.append("g")
+        .attr("class", "slider")
+        .attr("transform", "translate(" + margin.left + "," + height / 2 + ")");
+      slider.append("line")
+        .attr("class", "track")
+        .attr("x1", x.range()[0])
+        .attr("x2", x.range()[1])
+        .select(function () { return this.parentNode.appendChild(this.cloneNode(true)); })
+        .attr("class", "track-inset")
+        .select(function () { return this.parentNode.appendChild(this.cloneNode(true)); })
+        .attr("class", "track-overlay")
+        .call(d3.drag()
+          .on("start.interrupt", function () { slider.interrupt(); })
+          .on("start drag", function () {
+            currentValue = d3.event.x;
+            update(x.invert(currentValue));
+          })
+        );
+      slider.insert("g", ".track-overlay")
+        .attr("class", "ticks")
+        .attr("transform", "translate(0," + 18 + ")")
+        .selectAll("text")
+        .data(x.ticks(10))
+        .enter()
+        .append("text")
+        .style("fill", "#fff")
+        .attr("x", x)
+        .attr("y", 10)
+        .attr("text-anchor", "middle")
+        .text(function (d) { return formatDateIntoYear(d); });
+      var handle = slider.insert("circle", ".track-overlay")
+        .attr("class", "handle")
+        .attr("r", 9);
+      var label = slider.append("text")
+        .style("fill", "#fff")
+        .attr("class", "label")
+        .attr("text-anchor", "middle")
+        .text(formatDate(startDate))
+        .attr("transform", "translate(0," + (-25) + ")")
+      ////////// plot //////////
+      var dataset;
+      d3.csv("/data/circle2.csv", prepare, function (data) {
+        dataset = data;
+        drawPlot(dataset);
+        playButton
+          .on("click", function () {
+            var button = d3.select(this);
+            if (button.text() == "Pause") {
+              moving = false;
+              clearInterval(timer);
+              // timer = 0; // for endless loop
+              button.text("Play");
+            } else {
+              moving = true;
+              timer = setInterval(step, 1000);
+              button.text("Pause");
+            }
+            console.log("Slider moving: " + moving);
+          })
+      })
+      function prepare(d) {
+        d.id = d.id;
+        d.src_country = d.src_country;
+        d.dest_country = d.dest_country;
+        d.date = parseDate(d.date);
+        return d;
+      }
+      function step() {
+        update(x.invert(currentValue));
+        currentValue = currentValue + (targetValue / 151);
+        if (currentValue > targetValue) {
+          moving = false;
+          currentValue = 0;
+          clearInterval(timer);
+          // timer = 0;
+          playButton.text("Play");
+          console.log("Slider moving: " + moving);
+        }
+      }
+      function drawPlot(data) {
+        console.log(data);
+      }
+      function update(h) {
+        // update position and text of label according to slider scale
+        handle.attr("cx", x(h));
+        label
+          .attr("x", x(h))
+          .text(formatDate(h));
+        // filter data set and redraw plot
+        let newData = dataset.filter(function (d) {
+          return d.date < h;
+        })
+        let index = newData.length - 1;
+        let theData = newData[index];
+        //- console.log(theData);
+        //- drawPlot(newData);
+        setTimeout(function()
+        {
+            flyX(theData);
+              //voila!
+        }, 100);
+        
+      }

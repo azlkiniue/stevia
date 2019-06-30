@@ -9,7 +9,7 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
     link(rel='stylesheet', href='../css/v4.css')
     script(src='../js/jquery.min.js')
     script(src='../js/bootstrap.min.js')
-    title Flight Animation
+    title S T E V I A
     link(rel='stylesheet', href='../css/v4gray.css')
     style.
       @media(max-width: 768px) {
@@ -26,15 +26,27 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
   body
     .header
     .content
-      .container
-      #map
+      .container-fluid.pl-0.pr-0
+        #map
+        .fixed-bottom
+          .d-flex.justify-content-start
+            .col-8
+              table.table.table-sm.table-dark
+                thead
+                  tr
+                    th Source
+                    th Destination
+                    th Alert
+                tbody.table-borderless#stats
+                  tr
+                    td.text-center(colspan="3") No Data Available
     .footer
     script(src='/socket.io/socket.io.js')
     script(src='../js/d3.v4.min.js')
     script(src='../js/queue.v1.min.js')
     script(src='../js/topojson.v1.min.js')
     script.
-      var useDummy = true;
+      var useDummy = false;
 
       var currentWidth = $('#map').width();
       var width = 938;
@@ -62,20 +74,20 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
       }
 
        function delta(plane, path) {
-         var l = path.getTotalLength();
-         var plane = plane;
+         let l = path.getTotalLength();
+         //let plane = plane;
          return function(i) {
            return function(t) {
-             var p = path.getPointAtLength(t * l);
+             let p = path.getPointAtLength(t * l);
 
-            var t2 = Math.min(t + 0.05, 1);
-            var p2 = path.getPointAtLength(t2 * l);
+            let t2 = Math.min(t + 0.05, 1);
+            let p2 = path.getPointAtLength(t2 * l);
 
-            var x = p2.x - p.x;
-            var y = p2.y - p.y;
-            var r = 90 - Math.atan2(-y, x) * 180 / Math.PI;
+            let x = p2.x - p.x;
+            let y = p2.y - p.y;
+            let r = 90 - Math.atan2(-y, x) * 180 / Math.PI;
 
-            var s = Math.min(Math.sin(Math.PI * t) * 0.7, 0.3);
+            let s = Math.min(Math.sin(Math.PI * t) * 0.7, 0.3);
 
             return "translate(" + p.x + "," + p.y + ") scale(" + s + ") rotate(" + r + ")";
           }
@@ -83,14 +95,14 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
       }
 
       function trailDelta() {
-        var l = this.getTotalLength(),
+        let l = this.getTotalLength(),
             i = d3.interpolateString("0," + l, l + "," + l);
         return function(t) { return i(t); };
       }
 
       function transition(plane, route, trail) {
-        var l = route.node().getTotalLength();
-        var duration = l*5;
+        let l = route.node().getTotalLength();
+        let duration = l*5;
         //- plane.transition()
         //-     .duration(l * 5)
         //-     .attrTween("transform", delta(plane, route.node()))
@@ -133,26 +145,20 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
 
           route.remove();
       }
-        
-      var defaultCity = "Indonesia";
 
       function fly(origin, destination) {
-        if(origin == "UNDEFINED")
-          origin = defaultCity;
-        if(destination == "UNDEFINED")
-          destination = defaultCity;
 
-        var route = svg.append("path")
+        let route = svg.append("path")
                       .datum({type: "LineString", coordinates: [capitalCities[origin], capitalCities[destination]]})
                       .attr("class", "route")
                       .attr("d", path);
           
-        var trail = svg.append("path")
+        let trail = svg.append("path")
                       .datum({type: "LineString", coordinates: [capitalCities[origin], capitalCities[destination]]})
                       .attr("class", "trail")
                       .attr("d", path);               
 
-        var plane = svg.append("path")
+        let plane = svg.append("path")
                       .attr("class", "plane")
                       .attr("d", "M-3.837,3.457l-24.399,48.587c-2.322,4.625-0.149,7.31,4.856,5.994L0.366,51.8l22.979,6.185    c5.001,1.346,7.202-1.333,4.923-5.982L4.497,3.499C2.217-1.15-1.515-1.168-3.837,3.457z")
                       .attr("width", "20px")
@@ -179,7 +185,7 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
           .attr("id", function(d) {return d.id;})
           .attr("d", path);
 
-        var geos = topojson.feature(airports, airports.objects.capitals).features;
+        let geos = topojson.feature(airports, airports.objects.capitals).features;
         for (i in geos) {
           if(useDummy){
             capitalCities[i] = geos[i].geometry.coordinates;
@@ -187,9 +193,10 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
             capitalCities[geos[i].properties.country] = geos[i].geometry.coordinates;
           }
         }
-        var lenCapitalCities = capitalCities.length;
+        let lenCapitalCities = capitalCities.length;
         console.log(geos);
           
+        let defaultCountry = "Indonesia";
         if(useDummy){
           setInterval(function() {
             let rand1 = Math.floor(Math.random() * Math.floor(lenCapitalCities));
@@ -200,12 +207,34 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
               fly(rand1, rand2);
           }, 100);
         } else {
-          var socket = io();
+          let socket = io();
           socket.on('mongoStream', function (data) {
               console.log(data.fullDocument.src_country, data.fullDocument.dest_country);
+              if(data.fullDocument.src_country == "UNDEFINED")
+                data.fullDocument.src_country = defaultCountry;
+              if(data.fullDocument.dest_country == "UNDEFINED")
+                data.fullDocument.dest_country = defaultCountry;
               fly(data.fullDocument.src_country, data.fullDocument.dest_country);
+              updateTable(data.fullDocument);
           });
         }
+      }
+
+      let tableRows = 0, maxRow = 5;
+      function updateTable(data){
+
+        //insert new row
+        $("<tr>"+
+          "<td>"+ data.src_ip + "(" + data.src_country + ")" + "</td>"+
+          "<td>"+ data.dest_ip + "(" + data.dest_country + ")" +"</td>"+
+          "<td>"+ data.alert_message +"</td>"+
+          "</tr>")
+          .hide().appendTo("#stats").show("slow");
+
+        tableRows++;
+        if(tableRows > maxRow || tableRows == 1)
+          //remove first row
+          $("#stats tr:first").remove();
       }
       
       $(function() {
@@ -219,3 +248,4 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
           svg.attr("height", currentWidth * height / width);
         });
       });
+

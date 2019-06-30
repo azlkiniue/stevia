@@ -1,6 +1,6 @@
 const ip = {
   master: "10.8.0.2", //use with vpn
-  bigData: "157.230.241.208",
+  bigData: "202.46.4.52",
   sensor: "68.183.177.125",
   local: "127.0.0.1"
 }

@@ -23,6 +23,10 @@ router.get('/mongo', function(req, res, next) {
 
 router.get('/map', function (req, res, next) {
   res.render('test/map')
-})
+});
+
+router.get('/history', function (req, res, next) {
+  res.render('test/history')
+});
 
 module.exports = router;
