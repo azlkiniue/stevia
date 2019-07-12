@@ -10,7 +10,7 @@ const values = {
   enableSSH: false,
   mongoUrl : "mongodb://admin:jarkoM@"+ ip.bigData +":27017/",
   mongoDbName : "stevia",
-  mongoCollection : "event",
+  mongoCollection : "event1s",
   sshConf: {
     username:'hduser',
     password:'jarkoM',

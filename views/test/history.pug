@@ -6,7 +6,7 @@ html
     link(rel='stylesheet', href='../css/v4.css')
     script(src='../js/jquery.min.js')
     script(src='../js/bootstrap.min.js')
-    title History
+    title S T E V I A | History
     link(rel='stylesheet', href='../css/v4gray.css')
     style.
       @media(max-width: 768px) {
@@ -94,6 +94,7 @@ html
     script(src='../js/d3.v4.min.js')
     script(src='../js/queue.v1.min.js')
     script(src='../js/topojson.v1.min.js')
+    script(src='../js/moment.min.js')
     script.
       var useDummy = false;
 
@@ -234,7 +235,11 @@ html
       function flyX(d){
         //data = JSON.parse(d);
         //- console.log(d.src_country, d.dest_country);
-        fly(d.src_country, d.dest_country);
+        if(d._id.src_country == "UNDEFINED")
+          d._id.src_country = defaultCity;
+        if(d._id.dest_country == "UNDEFINED")
+          d._id.dest_country = defaultCity;
+        fly(d._id.src_country, d._id.dest_country);
       }
 
       function loaded(error, countries, airports) {
@@ -294,11 +299,12 @@ html
 
     script.
       src = {};
-      var formatDateIntoYear = d3.timeFormat("%Y");
+      var formatDateIntoYear = d3.timeFormat("%H:%M %m/%y");
       var formatDate = d3.timeFormat("%b %Y");
-      var parseDate = d3.timeParse("%m/%d/%y");
-      var startDate = new Date("2004-11-01"),
-        endDate = new Date("2017-04-01");
+      var parseDate = d3.timeParse("%m-%d-%H");
+      var momentDate = function(m, d, h) { return moment().month(m-1).date(d).hour(h).toDate(); };
+      var startDate = moment().subtract(1, 'day').toDate(),
+        endDate = moment().toDate();
       var margin = { top: 0, right: 50, bottom: 0, left: 30 },
         width = 960 - margin.left - margin.right,
         height = 100 - margin.top - margin.bottom;
@@ -356,7 +362,7 @@ html
         .attr("transform", "translate(0," + (-25) + ")")
       ////////// plot //////////
       var dataset;
-      d3.csv("/data/circle2.csv", prepare, function (data) {
+      d3.json("/api/daily", function (data) {
         dataset = data;
         drawPlot(dataset);
         playButton
@@ -369,7 +375,7 @@ html
               button.text("Play");
             } else {
               moving = true;
-              timer = setInterval(step, 1000);
+              timer = setInterval(step, 250);
               button.text("Pause");
             }
             console.log("Slider moving: " + moving);
@@ -405,15 +411,19 @@ html
           .text(formatDate(h));
         // filter data set and redraw plot
         let newData = dataset.filter(function (d) {
-          return d.date < h;
+          //- let date = parseDate(d._id.month + "-" + d._id.day + "-" + d._id.hour);
+          let date = momentDate(d._id.month, d._id.day, d._id.hour);
+          //- console.log(date);
+          return date < h;
         })
         let index = newData.length - 1;
         let theData = newData[index];
-        //- console.log(theData);
+        console.log(h);
         //- drawPlot(newData);
         setTimeout(function()
         {
             flyX(theData);
+            //- console.log(JSON.stringify(theData))
               //voila!
         }, 100);
         

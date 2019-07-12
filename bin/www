@@ -50,7 +50,9 @@ function connectDb() {
     if (error) throw error;
     else db.listenChangeStream(function (changedData) {
       socket.notifyUpdateMongo(changedData);
-    })
+    });
+
+    app.locals.db = db;
   
     server.listen(port);
     server.on('error', onError);
@@ -117,4 +119,5 @@ function onListening() {
     ? 'pipe ' + addr
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
+  console.log('Listening on ' + bind);
 }

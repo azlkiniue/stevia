@@ -17,9 +17,9 @@ exports.listenChangeStream = function (callback) {
   var collection = dbo.collection(values.mongoCollection);
   var changeStream = collection.watch();
   
-  changeStream.on("change", function(change) {
+  changeStream.on("change", function(changedData) {
     // console.log(change);
-    return callback(change);
+    return callback(changedData);
   });
 }
 
