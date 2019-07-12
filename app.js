@@ -19,10 +19,12 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/js', express.static(__dirname + '/node_modules/bootstrap/dist/js')); // redirect bootstrap JS
-app.use('/js', express.static(__dirname + '/node_modules/jquery/dist')); // redirect JS jQuery
-app.use('/js', express.static(__dirname + '/node_modules/d3/dist')); // redirect D3
-app.use('/css', express.static(__dirname + '/node_modules/bootstrap/dist/css')); // redirect CSS bootstrap
+app.use('/js', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/js'))); // redirect bootstrap JS
+app.use('/js', express.static(path.join(__dirname, 'node_modules/jquery/dist/'))); // redirect jQuery
+app.use('/js', express.static(path.join(__dirname, 'node_modules/d3/dist/'))); // redirect D3
+app.use('/js', express.static(path.join(__dirname, 'node_modules/socket.io-client/dist'))); // redirect socket.io
+app.use('/js', express.static(path.join(__dirname, 'node_modules/moment/min'))); // redirect moment.js
+app.use('/css', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/css/'))); // redirect CSS bootstrap
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);

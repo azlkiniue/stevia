@@ -8,12 +8,7 @@
       "type": "node",
       "request": "launch",
       "name": "Launch Program",
-      "program": "${workspaceFolder}/bin/www",
-      "serverReadyAction": {
-        "pattern": "listening on port ([0-9]+)",
-        "uriFormat": "http://localhost:%s",
-        "action": "openExternally"
-      }
+      "program": "${workspaceFolder}/bin/www"
     }
   ]
 }
