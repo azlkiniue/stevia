@@ -2,4 +2,14 @@ extends layout
 
 block content
   h1= title
-  p Welcome to #{title}
+  p Welcome! STEVIA is a project using D3-Geo module of D3.js to visualize internet attacks in spatio-temporal dimension, <br> hence the name stands for "Spatio-Temporal Visualization of Internet Attacks".
+  p Content:
+  ul
+    li  
+      a(href="test/map") Realtime Attack
+      p Visualize what happens right now.
+    li 
+      a(href="test/history") Historical Attack (Daily)
+      p Visualize the last 24 hours activities.
+
+
