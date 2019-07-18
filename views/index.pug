@@ -11,5 +11,20 @@ block content
     li 
       a(href="test/history") Historical Attack (Daily)
       p Visualize the last 24 hours activities.
+    li 
+      a(href="test/historyWeekly") Historical Attack (Weekly)
+      p Visualize the last 7 days activities.
+    li 
+      a(href="test/historyMonthly") Historical Attack (Monthly)
+      p Visualize the last month activities.
+    li
+      input#query(type="date")  
+      a#link(href="#", style="margin-left: 9px;") Historical Attack By Query
+      p Visualize the last activities by The Query.
 
-
+  script(src='../js/jquery.min.js')
+  script.
+    $("#query").change(function() {
+      console.log($(this).val());
+      $("#link").attr("href", "test/historyQuery?date=" + $(this).val());
+    })

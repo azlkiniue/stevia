@@ -17,7 +17,7 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
       }
 
       @media(min-width: 768px) {
-        #map {
+        .content {
           margin-top: -300px;
         }
       }
@@ -203,7 +203,18 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
         console.log(geos);
           
         let defaultCountry = "Indonesia";
-        let colorAttack = [];
+        let colorAttack = {
+          "Consecutive TCP small segments exceeding threshold": "Turquoise",
+          "Reset outside window": "Blue",
+          "(spp_ssh) Protocol mismatch": "Green",
+          "(http_inspect) LONG HEADER": "White",
+          "(http_inspect) UNESCAPED SPACE IN HTTP URI": "DarkRed",
+          "Bad segment, adjusted size <= 0": "Aqua",
+          "(http_inspect) TOO MANY PIPELINED REQUESTS": "Gold",
+          "(http_inspect) UNKNOWN METHOD": "PaleGreen",
+          "(http_inspect) SIMPLE REQUEST": "RoyalBlue",
+          "(http_inspect) NON-RFC DEFINED CHAR": "Tomato"
+        };
         if(useDummy){
           setInterval(function() {
             let rand1 = Math.floor(Math.random() * Math.floor(lenCapitalCities));
@@ -224,30 +235,32 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
             if(event.dest_country == "UNDEFINED")
               event.dest_country = defaultCountry;
             
-            //generate random color
-            let color = colorAttack.find(obj => obj.alert_message === event.alert_message);
+            
+            let color = colorAttack[event.alert_message];
             if(!color){
-              let colorVal = "hsl(" + 360 * Math.random() + ',' +
-                 (25 + 70 * Math.random()) + '%,' + 
-                 (50 + 10 * Math.random()) + '%)';
-              color = {alert_message: event.alert_message, color: colorVal};
-              colorAttack.push(color);
-              console.log(color);
+              color = "White";
+            //generate random color
+            //-   let colorVal = "hsl(" + 360 * Math.random() + ',' +
+            //-      (25 + 70 * Math.random()) + '%,' + 
+            //-      (50 + 10 * Math.random()) + '%)';
+            //-   color = {alert_message: event.alert_message, color: colorVal};
+            //-   colorAttack.push(color);
+            //-   console.log(color);
             }
-            fly(event.src_country, event.dest_country, color.color);
-            updateTable(event);
+            fly(event.src_country, event.dest_country, color);
+            updateTable(event, color);
           });
         }
       }
 
       let tableRows = 0, maxRow = 5;
-      function updateTable(data){
+      function updateTable(data, color){
 
         //insert new row
         $("<tr>"+
           "<td>"+ data.src_ip + "(" + data.src_country + ")" + "</td>"+
           "<td>"+ data.dest_ip + "(" + data.dest_country + ")" +"</td>"+
-          "<td>"+ data.alert_message +"</td>"+
+          "<td style='color:"+ color +";'>"+ data.alert_message +"</td>"+
           "<td>"+ data.value +"</td>"+
           "</tr>")
           .hide().appendTo("#stats").show("slow");

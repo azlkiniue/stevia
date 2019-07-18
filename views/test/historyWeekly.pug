@@ -16,7 +16,7 @@ html
       }
 
       @media(min-width: 768px) {
-        .content {
+        #map {
           margin-top: -300px;
         }
       }
@@ -285,13 +285,12 @@ html
         queue().defer(d3.json, "../json/countries2.topo.json")
               .defer(d3.json, "../json/capitals.topo.json")
               .await(loaded);
-              
-        var width = 938;
-        var height = 620;
-        currentWidth = $("#map").width();
-        console.log(height, width);
-        svg.attr("width", currentWidth);
-        svg.attr("height", currentWidth * height / width);
+
+        $(window).resize(function() {
+          currentWidth = $("#map").width();
+          svg.attr("width", currentWidth);
+          svg.attr("height", currentWidth * height / width);
+        });
       });
 
     script.
@@ -300,7 +299,7 @@ html
       var formatDate = d3.timeFormat("%b %Y");
       var parseDate = d3.timeParse("%m-%d-%H");
       var momentDate = function(m, d, h) { return moment().month(m-1).date(d).hour(h).toDate(); };
-      var startDate = moment().subtract(1, 'day').toDate(),
+      var startDate = moment().subtract(1, 'week').toDate(),
         endDate = moment().toDate();
       var margin = { top: 0, right: 50, bottom: 0, left: 30 },
         width = 960 - margin.left - margin.right,
@@ -359,7 +358,7 @@ html
         .attr("transform", "translate(0," + (-25) + ")")
       ////////// plot //////////
       var dataset;
-      d3.json("/api/daily", function (data) {
+      d3.json("/api/weekly", function (data) {
         dataset = data;
         drawPlot(dataset);
         playButton
@@ -421,12 +420,3 @@ html
         }, 10);
         
       }
-
-      $(function() {
-        $(window).resize(function() {
-          curWidth = $("#vis").width();
-          curHeight = $("#vis").height();
-          vis.attr("width", curWidth + margin.left + margin.right);
-          vis.attr("height", curHeight + margin.top + margin.bottom);
-        });
-      });

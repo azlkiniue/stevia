@@ -296,11 +296,12 @@ html
 
     script.
       src = {};
-      var formatDateIntoYear = d3.timeFormat("%H:%M %m/%y");
-      var formatDate = d3.timeFormat("%b %Y");
+      var paramDate = new URLSearchParams(window.location.search).get("date");
+      var formatDateIntoYear = d3.timeFormat("%H:%M %d/%m/%y");
+      var formatDate = d3.timeFormat("%d %b %Y");
       var parseDate = d3.timeParse("%m-%d-%H");
       var momentDate = function(m, d, h) { return moment().month(m-1).date(d).hour(h).toDate(); };
-      var startDate = moment().subtract(1, 'day').toDate(),
+      var startDate = moment(paramDate, "YYYY-MM-DD").toDate(),
         endDate = moment().toDate();
       var margin = { top: 0, right: 50, bottom: 0, left: 30 },
         width = 960 - margin.left - margin.right,
@@ -359,7 +360,8 @@ html
         .attr("transform", "translate(0," + (-25) + ")")
       ////////// plot //////////
       var dataset;
-      d3.json("/api/daily", function (data) {
+      
+      d3.json("/api/query?date="+paramDate, function (data) {
         dataset = data;
         drawPlot(dataset);
         playButton

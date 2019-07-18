@@ -29,4 +29,16 @@ router.get('/history', function (req, res, next) {
   res.render('test/history')
 });
 
+router.get('/historyWeekly', function (req, res, next) {
+  res.render('test/historyWeekly')
+});
+
+router.get('/historyMonthly', function (req, res, next) {
+  res.render('test/historyMonthly')
+});
+
+router.get('/historyQuery', function (req, res, next) {
+  res.render('test/historyQuery')
+});
+
 module.exports = router;
