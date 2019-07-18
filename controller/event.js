@@ -42,6 +42,25 @@ exports.getAggregateMonthly = function (req, res) {
       res.send(err);
     } 
     else
+      event.sort(function (a, b) {
+        return a._id.month - b._id.month || a._id.day - b._id.day || a._id.hour - b._id.hour;
+      });
+      res.json(event);
+  });
+}
+
+exports.getByQuery = function (req, res) {
+  const db = req.app.locals.db.get();
+  let dayLimit = moment(req.query.date, "YYYY-MM-DD");
+
+  sendAggregate(db, dayLimit).toArray(function (err, event) {
+    if (err) {
+      res.send(err);
+    } 
+    else
+      event.sort(function (a, b) {
+        return a._id.month - b._id.month || a._id.day - b._id.day || a._id.hour - b._id.hour;
+      });
       res.json(event);
   });
 }
@@ -71,7 +90,7 @@ const sendAggregate = function (db, dayLimit) {
           {
             $and: [
               {
-                "_id.day" : { $gte : dayLimit.date() }
+                "_id.day" : { $gt : dayLimit.date() }
               },
               {
                 "_id.month" : dayLimit.month()+1
@@ -81,7 +100,7 @@ const sendAggregate = function (db, dayLimit) {
           {
             $and: [
               {
-                "_id.hour" : { $gte : dayLimit.hour() }
+                "_id.hour" : { $gt : dayLimit.hour() }
               },
               {
                 "_id.day" : dayLimit.date() 
@@ -93,6 +112,12 @@ const sendAggregate = function (db, dayLimit) {
           }
         ]
       }
+    }, {
+      $sort: {
+        count: -1
+      }
+    }, {
+      $limit: 150
     }
   ])
 }
