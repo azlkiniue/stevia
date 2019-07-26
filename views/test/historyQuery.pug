@@ -23,7 +23,7 @@ html
 
       body {
         font-family: "avenir next", Arial, sans-serif;
-        font-size: 12px;
+        font-size: 16px;
         color: #696969;
       }
 
@@ -44,7 +44,7 @@ html
       //- }
 
       .ticks {
-        font-size: 10px;
+        font-size: 12px;
       }
 
       .track,
@@ -83,7 +83,7 @@ html
       .container
         #map
         #vis
-          button#play-button.btn.btn-primary.mr-5(disabled) Loading..
+        button#play-button.btn.btn-primary.mr-5(disabled) Loading..
     .footer
     
     script(src='/socket.io/socket.io.js')
@@ -146,7 +146,7 @@ html
         return function(t) { return i(t); };
       }
 
-      function transition(plane, route, trail) {
+      function transition(plane, route, trail, color) {
         var l = route.node().getTotalLength();
         var duration = l*5;
         //- plane.transition()
@@ -158,11 +158,11 @@ html
         trail.transition()
             .duration(duration)
             .attrTween("stroke-dasharray", trailDelta)
-            .on("end", destinationPulse(route, duration))
+            .on("end", destinationPulse(route, duration, color))
             .remove();     
       }
 
-      function destinationPulse(route, delayDuration){
+      function destinationPulse(route, delayDuration, color){
         let dataCircle = route.datum();
         let pointDestination = projection(dataCircle.coordinates[1]);
           
@@ -172,7 +172,7 @@ html
           .attr("cy", pointDestination[1])
           .attr("r", 0)
           .style("class", "destCircleMouse")
-          .style("fill", "white")
+          .style("fill", color)
           .style("fill-opacity", "1")
           .transition()
           .delay(delayDuration)
@@ -193,8 +193,7 @@ html
       }
         
       var defaultCity = "Indonesia";
-
-      function fly(origin, destination) {
+      function fly(origin, destination, color) {
         if(origin == "UNDEFINED")
           origin = defaultCity;
         if(destination == "UNDEFINED")
@@ -208,6 +207,7 @@ html
         var trail = svg.append("path")
                       .datum({type: "LineString", coordinates: [capitalCities[origin], capitalCities[destination]]})
                       .attr("class", "trail")
+                      .style("stroke", color)
                       .attr("d", path);               
 
         var plane = svg.append("path")
@@ -216,7 +216,7 @@ html
                       .attr("width", "20px")
                       .attr("height", "20px");
 
-        transition(plane, route, trail);
+        transition(plane, route, trail, color);
       }
 
       function flyRandom(){
@@ -228,14 +228,29 @@ html
           fly(rand1, rand2);
       }
 
+      let colorAttack = {
+        "Consecutive TCP small segments exceeding threshold": "Turquoise",
+        "Reset outside window": "Blue",
+        "(spp_ssh) Protocol mismatch": "Green",
+        "(http_inspect) LONG HEADER": "Lime",
+        "(http_inspect) UNESCAPED SPACE IN HTTP URI": "DarkRed",
+        "Bad segment, adjusted size <= 0": "Aqua",
+        "(http_inspect) TOO MANY PIPELINED REQUESTS": "Gold",
+        "(spp_sdf) SDF Combination Alert": "PaleGreen",
+        "(http_inspect) INVALID CONTENT-LENGTH OR CHUNK SIZE": "RoyalBlue",
+        "(http_inspect) NO CONTENT-LENGTH OR TRANSFER-ENCODING IN HTTP RESPONSE": "Tomato"
+      };
       function flyX(d){
+        let color = colorAttack[d._id.alert_message];
+        if(!color){
+          color = "White";
+        }
         //data = JSON.parse(d);
-        console.log(d);
         if(d._id.src_country == "UNDEFINED")
           d._id.src_country = defaultCity;
         if(d._id.dest_country == "UNDEFINED")
           d._id.dest_country = defaultCity;
-        fly(d._id.src_country, d._id.dest_country);
+        fly(d._id.src_country, d._id.dest_country, color);
       }
 
       function loaded(error, countries, airports) {
@@ -298,13 +313,13 @@ html
       src = {};
       var paramDate = new URLSearchParams(window.location.search).get("date");
       var formatDateIntoYear = d3.timeFormat("%H:%M %d/%m/%y");
-      var formatDate = d3.timeFormat("%d %b %Y");
+      var formatDate = d3.timeFormat("%H:%M %d %b %Y");
       var parseDate = d3.timeParse("%m-%d-%H");
       var momentDate = function(m, d, h) { return moment().month(m-1).date(d).hour(h).toDate(); };
       var startDate = moment(paramDate, "YYYY-MM-DD").toDate(),
         endDate = moment().toDate();
-      var margin = { top: 0, right: 50, bottom: 0, left: 30 },
-        width = 960 - margin.left - margin.right,
+      var margin = { top: 0, right: 50, bottom: 0, left: 50 },
+        width = 1100 - margin.left - margin.right,
         height = 100 - margin.top - margin.bottom;
       var vis = d3.select("#vis")
         .append("svg")
