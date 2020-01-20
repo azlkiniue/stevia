@@ -6,16 +6,16 @@ block content
   p Content:
   ul
     li  
-      a(href="test/map") Realtime Attack
+      a(href="map/map") Realtime Attack
       p Visualize what happens right now.
     li 
-      a(href="test/history") Historical Attack (Daily)
+      a(href="map/history") Historical Attack (Daily)
       p Visualize the last 24 hours activities.
     li 
-      a(href="test/historyWeekly") Historical Attack (Weekly)
+      a(href="map/historyWeekly") Historical Attack (Weekly)
       p Visualize the last 7 days activities.
     li 
-      a(href="test/historyMonthly") Historical Attack (Monthly)
+      a(href="map/historyMonthly") Historical Attack (Monthly)
       p Visualize the last month activities.
     li
       input#query(type="date")  
@@ -26,5 +26,5 @@ block content
   script.
     $("#query").change(function() {
       console.log($(this).val());
-      $("#link").attr("href", "test/historyQuery?date=" + $(this).val());
+      $("#link").attr("href", "map/historyQuery?date=" + $(this).val());
     })
