@@ -61,6 +61,15 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
                   .pointRadius(2)
                   .projection(projection);
         
+      //ref: https://stackoverflow.com/a/56568406
+      var straightline = d3.line()
+                          .x(function(d) {
+                            return projection([d[0],d[1]])[0];
+                          })
+                          .y(function(d) {
+                            return projection([d[0],d[1]])[1];
+                          }); 
+      
       var svg = d3.select("#map")
                   .append("svg")
                   .attr("preserveAspectRatio", "xMidYMid")
@@ -79,7 +88,7 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
          //let plane = plane;
          return function(i) {
            return function(t) {
-             let p = path.getPointAtLength(t * l);
+            let p = path.getPointAtLength(t * l);
 
             let t2 = Math.min(t + 0.05, 1);
             let p2 = path.getPointAtLength(t2 * l);
@@ -101,27 +110,21 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
         return function(t) { return i(t); };
       }
 
-      //function transition(plane, route, trail) {
       function transition(route, trail, color) {
         let l = route.node().getTotalLength();
         let duration = l*5;
-        //- plane.transition()
-        //-     .duration(l * 5)
-        //-     .attrTween("transform", delta(plane, route.node()))
-        //-     //- .each("end", destinationPulse(route, this))
-        //-     .remove();
             
         trail.transition()
             .duration(duration)
             .attrTween("stroke-dasharray", trailDelta)
             .on("end", destinationPulse(route, duration, color))
-            .remove();     
+            .remove();       
       }
 
       function destinationPulse(route, delayDuration, color){
         let dataCircle = route.datum();
-        let pointDestination = projection(dataCircle.coordinates[1]);
-          //- console.log(color);
+        let pointDestination = projection(dataCircle[1]);
+        //- console.log(color);
         svg.append("circle")
           .datum(dataCircle)
           .attr("cx", pointDestination[0])
@@ -149,27 +152,19 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
       }
 
       function fly(origin, destination, color) {
-
         //- console.log(color)
+        //ref: https://stackoverflow.com/a/56568406
         let route = svg.append("path")
-                      .datum({type: "LineString", coordinates: [capitalCities[origin], capitalCities[destination]]})
+                      .datum([capitalCities[origin], capitalCities[destination]])
                       .attr("class", "route")
-                      .attr("d", path);
-          
+                      .attr("d", straightline);
+
         let trail = svg.append("path")
-                      .datum({type: "LineString", coordinates: [capitalCities[origin], capitalCities[destination]]})
-                      .attr("class", "trail")
-                      .style("stroke", color)
-                      .style("stroke-width", "1")
-                      .attr("d", path);               
+                      .datum([capitalCities[origin], capitalCities[destination]])
+                      .attr("d", straightline)
+                      .style("stroke-width", 1.5)
+                      .style("stroke", color);
 
-        //- let plane = svg.append("path")
-        //-               .attr("class", "plane")
-        //-               .attr("d", "M-3.837,3.457l-24.399,48.587c-2.322,4.625-0.149,7.31,4.856,5.994L0.366,51.8l22.979,6.185    c5.001,1.346,7.202-1.333,4.923-5.982L4.497,3.499C2.217-1.15-1.515-1.168-3.837,3.457z")
-        //-               .attr("width", "20px")
-        //-               .attr("height", "20px");
-
-        //- transition(plane, route, trail);
         transition(route, trail, color);
       }
 
@@ -221,8 +216,12 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
             let rand2 = Math.floor(Math.random() * Math.floor(lenCapitalCities));
             let rand1test = rand1 == 226 || rand1 == 227;
             let rand2test = rand2 == 226 || rand2 == 227;
-            if(rand1 != rand2 && !rand1test && !rand2test)
-              fly(rand1, rand2);
+            if(rand1 != rand2 && !rand1test && !rand2test){
+              let colorVal = "hsl(" + 360 * Math.random() + ',' +
+                  (25 + 70 * Math.random()) + '%,' + 
+                  (50 + 10 * Math.random()) + '%)';
+              fly(rand1, rand2, colorVal);
+            }
           }, 100);
         } else {
           let socket = io();
@@ -239,13 +238,13 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
             let color = colorAttack[event.alert_message];
             if(!color){
               color = "White";
-            //generate random color
-            //-   let colorVal = "hsl(" + 360 * Math.random() + ',' +
-            //-      (25 + 70 * Math.random()) + '%,' + 
-            //-      (50 + 10 * Math.random()) + '%)';
-            //-   color = {alert_message: event.alert_message, color: colorVal};
-            //-   colorAttack.push(color);
-            //-   console.log(color);
+              //generate random color
+              let colorVal = "hsl(" + 360 * Math.random() + ',' +
+                 (25 + 70 * Math.random()) + '%,' + 
+                 (50 + 10 * Math.random()) + '%)';
+              color = {alert_message: event.alert_message, color: colorVal};
+              colorAttack.push(color);
+              console.log(color);
             }
             fly(event.src_country, event.dest_country, color);
             updateTable(event, color);
