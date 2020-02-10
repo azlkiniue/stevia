@@ -30,16 +30,16 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
       }
       .route {
       fill: none;
-      stroke: #000;
+      stroke: #fff;
       stroke-width: 0;
       }
       .trail {
       fill: none;
-      stroke: #000;
+      stroke: #fff;
       stroke-width: 1;
       }
       .plane {
-      fill: #000;
+      fill: #fff;
       stroke-width: 0;
       }
       @media(max-width: 768px) {
@@ -79,6 +79,14 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
                     .path()
                     .pointRadius(2)
                     .projection(projection);
+
+        var straightline = d3.svg.line()
+                            .x(function(d) {
+                              return projection([d[0],d[1]])[0];
+                            })
+                            .y(function(d) {
+                              return projection([d[0],d[1]])[1];
+                            });            
         
         var svg = d3.select("#map")
                     .append("svg")
@@ -93,7 +101,7 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
           var capitalCities = {};
         }
 
-        function transition(plane, route, trail) {
+        function transition(plane, route, trail, straight) {
           var l = route.node().getTotalLength();
           plane.transition()
               .duration(l * 5)
@@ -105,7 +113,12 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
               .duration(l * 5)
               .attrTween("stroke-dasharray", trailDelta)
               .each("end", function() { route.remove(); })
-              .remove();     
+              .remove();
+
+          straight.transition()
+              .duration(l * 5)
+              .attrTween("stroke-dasharray", trailDelta)
+              .remove();
         }
         
         function delta(plane, path) {
@@ -151,15 +164,21 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
           var trail = svg.append("path")
                         .datum({type: "LineString", coordinates: [capitalCities[origin], capitalCities[destination]]})
                         .attr("class", "trail")
-                        .attr("d", path);               
-
+                        .attr("d", path);
+          
+          var straight = svg.append("path")
+                          .datum([capitalCities[origin], capitalCities[destination]])
+                          .attr("d", straightline)
+                          .style("stroke-width", 1.5)
+                          .style("stroke", "orange");
+          
           var plane = svg.append("path")
                         .attr("class", "plane")
                         .attr("d", "M-3.837,3.457l-24.399,48.587c-2.322,4.625-0.149,7.31,4.856,5.994L0.366,51.8l22.979,6.185    c5.001,1.346,7.202-1.333,4.923-5.982L4.497,3.499C2.217-1.15-1.515-1.168-3.837,3.457z")
                         .attr("width", "20px")
                         .attr("height", "20px");
 
-          transition(plane, route, trail);
+          transition(plane, route, trail, straight);
         }
 
         function loaded(error, countries, airports) {
@@ -189,7 +208,7 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
             }
           }
           var lenCapitalCities = capitalCities.length;
-          console.log(geos);
+          console.log(capitalCities);
           
           if(useDummy){
             setInterval(function() {
