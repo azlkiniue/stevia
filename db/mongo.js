@@ -3,7 +3,7 @@ var values = require("../resources/values");
 var dbo = null;
 
 exports.connect = function (done) {
-  MongoClient.connect(values.mongoUrl, { useNewUrlParser: true }, function(err, db) {
+  MongoClient.connect(values.mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true }, function(err, db) {
     if (err) throw err;
     dbo = db.db(values.mongoDbName);
     

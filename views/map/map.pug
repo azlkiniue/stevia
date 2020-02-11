@@ -42,8 +42,7 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
     .footer
     script(src='../js/jquery.min.js')
     script(src='../js/bootstrap.min.js')
-    script(src='../js/d3.v4.min.js')
-    script(src='../js/queue.v1.min.js')
+    script(src='../js/d3.min.js')
     script(src='../js/topojson.v1.min.js')
     script(src='../js/socket.io.js')
     script.
@@ -129,14 +128,14 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
           .datum(dataCircle)
           .attr("cx", pointDestination[0])
           .attr("cy", pointDestination[1])
-          .attr("r", 0)
+          .attr("r", 2)
           .style("class", "destCircleMouse")
           .style("fill", color)
           .style("fill-opacity", "1")
           .transition()
           .delay(delayDuration)
           .duration(100)
-          .attr("r", "3px")
+          .attr("r", 3)
           .on("end", function (d) {
             d3.select(this)
               .transition()
@@ -168,7 +167,7 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
         transition(route, trail, color);
       }
 
-      function loaded(error, countries, airports) {
+      function loaded(countries, capitals) {
         svg.append("g")
           .attr("class", "countries")
           .selectAll("path")
@@ -178,15 +177,15 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
           .attr("d", path);
 
         svg.append("g")
-          .attr("class", "airports")
+          .attr("class", "capitals")
           .selectAll("path")
-          .data(topojson.feature(airports, airports.objects.capitals).features)
+          .data(topojson.feature(capitals, capitals.objects.capitals).features)
           .enter()
           .append("path")
           .attr("id", function(d) {return d.id;})
           .attr("d", path);
 
-        let geos = topojson.feature(airports, airports.objects.capitals).features;
+        let geos = topojson.feature(capitals, capitals.objects.capitals).features;
         for (i in geos) {
           if(useDummy){
             capitalCities[i] = geos[i].geometry.coordinates;
@@ -271,9 +270,25 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
       }
       
       $(function() {
-        queue().defer(d3.json, "../json/countries2.topo.json")
-              .defer(d3.json, "../json/capitals.topo.json")
-              .await(loaded);
+
+        //- d3.queue().defer(d3.json, "../json/countries2.topo.json")
+        //-       .defer(d3.json, "../json/capitals.topo.json")
+        //-       .await(loaded);
+
+        //ref: https://stackoverflow.com/a/49534634
+        var files = ["../json/countries2.topo.json", "../json/capitals.topo.json"];
+        var promises = [];
+        files.forEach(function(url) {
+            promises.push(d3.json(url))
+        });
+
+        Promise.all(promises)
+          .then(function(values) {
+            loaded(values[0], values[1])
+          })
+          .catch(error => { 
+            console.error(error.message)
+          });
 
         $(window).resize(function() {
           currentWidth = $("#map").width();

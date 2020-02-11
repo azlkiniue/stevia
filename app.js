@@ -24,6 +24,7 @@ app.use('/js', express.static(path.join(__dirname, 'node_modules/jquery/dist/'))
 app.use('/js', express.static(path.join(__dirname, 'node_modules/d3/dist/'))); // redirect D3
 app.use('/js', express.static(path.join(__dirname, 'node_modules/socket.io-client/dist'))); // redirect socket.io
 app.use('/js', express.static(path.join(__dirname, 'node_modules/moment/min'))); // redirect moment.js
+app.use('/js', express.static(path.join(__dirname, 'node_modules/d3/dist'))); // redirect d3.js
 app.use('/css', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/css/'))); // redirect CSS bootstrap
 
 app.use('/', indexRouter);
