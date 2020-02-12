@@ -61,13 +61,46 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
                   .projection(projection);
         
       //ref: https://stackoverflow.com/a/56568406
-      var straightline = d3.line()
-                          .x(function(d) {
-                            return projection([d[0],d[1]])[0];
-                          })
-                          .y(function(d) {
-                            return projection([d[0],d[1]])[1];
-                          }); 
+      var curve = function(context) {
+        var custom = d3.curveLinear(context);
+        custom._context = context;
+        custom.point = function(x,y) {
+          x = +x, y = +y;
+          switch (this._point) {
+            case 0: this._point = 1; 
+              this._line ? this._context.lineTo(x, y) : this._context.moveTo(x, y);
+              this.x0 = x; this.y0 = y;        
+              break;
+            case 1: this._point = 2;
+            default: 
+              var x1 = this.x0 * 0.5 + x * 0.5;
+              var y1 = this.y0 * 0.5 + y * 0.5;
+              var m = 1/(y1 - y)/(x1 - x);
+              var r = -100; // offset of mid point.
+              var k = r / Math.sqrt(1 + (m*m) );
+              if (m == Infinity) {
+                y1 += r;
+              }
+              else {
+                y1 += k;
+                x1 += m*k;
+              }     
+              this._context.quadraticCurveTo(x1,y1,x,y); 
+              this.x0 = x; this.y0 = y;        
+              break;
+          }
+        }
+        return custom;
+      }
+
+      var line = d3.line()
+                  .x(function(d) {
+                    return projection([d[0],d[1]])[0];
+                  })
+                  .y(function(d) {
+                    return projection([d[0],d[1]])[1];
+                  })
+                  .curve(curve); 
       
       var svg = d3.select("#map")
                   .append("svg")
@@ -142,8 +175,8 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
               .duration(500)
               .attr("r", 10) // circle radius end
               .style("fill-opacity", "0")
-              .on("end", function() { 
-                this.remove(); 
+              .on("end", function() {
+                this.remove();
               })
           });
 
@@ -156,11 +189,12 @@ html(lang='en', xmlns:fb='http://ogp.me/ns/fb#')
         let route = svg.append("path")
                       .datum([capitalCities[origin], capitalCities[destination]])
                       .attr("class", "route")
-                      .attr("d", straightline);
+                      .attr("d", line);
 
         let trail = svg.append("path")
                       .datum([capitalCities[origin], capitalCities[destination]])
-                      .attr("d", straightline)
+                      .attr("class", "trail")
+                      .attr("d", line)
                       .style("stroke-width", 1.5)
                       .style("stroke", color);
 
