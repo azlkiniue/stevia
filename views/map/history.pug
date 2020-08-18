@@ -80,15 +80,30 @@ html
   body
     .header
     .content
-      .container
+      .container-fluid.pl-0.pr-0
         #map
-        #vis
-          button#play-button.btn.btn-primary.mr-5(disabled) Loading..
+        .fixed-top
+          #vis.row.justify-content-center
+            .d-flex.align-items-center
+              button#play-button.btn.btn-primary.mr-3(disabled) Loading..
+        .fixed-bottom
+          .d-flex.justify-content-start
+            .col-8
+              table.table.table-sm.table-dark
+                thead
+                  tr
+                    th Source
+                    th Destination
+                    th Alert
+                    th Frequency
+                tbody.table-borderless#stats
+                  tr
+                    td.text-center(colspan="3") No Data Available
+        
     .footer
     
     script(src='/socket.io/socket.io.js')
-    script(src='../js/d3.v4.min.js')
-    script(src='../js/queue.v1.min.js')
+    script(src='../js/d3.min.js')
     script(src='../js/topojson.v1.min.js')
     script(src='../js/moment.min.js')
     script.
@@ -105,7 +120,49 @@ html
       var path = d3.geoPath()
                   .pointRadius(2)
                   .projection(projection);
-        
+
+      //ref: https://stackoverflow.com/a/56568406
+      var curve = function(context) {
+        var custom = d3.curveLinear(context);
+        custom._context = context;
+        custom.point = function(x,y) {
+          x = +x, y = +y;
+          switch (this._point) {
+            case 0: this._point = 1; 
+              this._line ? this._context.lineTo(x, y) : this._context.moveTo(x, y);
+              this.x0 = x; this.y0 = y;        
+              break;
+            case 1: this._point = 2;
+            default: 
+              var x1 = this.x0 * 0.5 + x * 0.5;
+              var y1 = this.y0 * 0.5 + y * 0.5;
+              var m = 1/(y1 - y)/(x1 - x);
+              var r = -100; // offset of mid point.
+              var k = r / Math.sqrt(1 + (m*m) );
+              if (m == Infinity) {
+                y1 += r;
+              }
+              else {
+                y1 += k;
+                x1 += m*k;
+              }     
+              this._context.quadraticCurveTo(x1,y1,x,y); 
+              this.x0 = x; this.y0 = y;        
+              break;
+          }
+        }
+        return custom;
+      }
+
+      var line = d3.line()
+                  .x(function(d) {
+                    return projection([d[0],d[1]])[0];
+                  })
+                  .y(function(d) {
+                    return projection([d[0],d[1]])[1];
+                  })
+                  .curve(curve); 
+
       var svg = d3.select("#map")
                   .append("svg")
                   .attr("preserveAspectRatio", "xMidYMid")
@@ -120,20 +177,20 @@ html
       }
 
       function delta(plane, path) {
-        var l = path.getTotalLength();
-        var plane = plane;
+        let l = path.getTotalLength();
+        //let plane = plane;
         return function(i) {
           return function(t) {
-            var p = path.getPointAtLength(t * l);
+            let p = path.getPointAtLength(t * l);
 
-            var t2 = Math.min(t + 0.05, 1);
-            var p2 = path.getPointAtLength(t2 * l);
+            let t2 = Math.min(t + 0.05, 1);
+            let p2 = path.getPointAtLength(t2 * l);
 
-            var x = p2.x - p.x;
-            var y = p2.y - p.y;
-            var r = 90 - Math.atan2(-y, x) * 180 / Math.PI;
+            let x = p2.x - p.x;
+            let y = p2.y - p.y;
+            let r = 90 - Math.atan2(-y, x) * 180 / Math.PI;
 
-            var s = Math.min(Math.sin(Math.PI * t) * 0.7, 0.3);
+            let s = Math.min(Math.sin(Math.PI * t) * 0.7, 0.3);
 
             return "translate(" + p.x + "," + p.y + ") scale(" + s + ") rotate(" + r + ")";
           }
@@ -141,43 +198,38 @@ html
       }
 
       function trailDelta() {
-        var l = this.getTotalLength(),
+        let l = this.getTotalLength(),
             i = d3.interpolateString("0," + l, l + "," + l);
         return function(t) { return i(t); };
       }
 
-      function transition(plane, route, trail) {
-        var l = route.node().getTotalLength();
-        var duration = l*5;
-        //- plane.transition()
-        //-     .duration(l * 5)
-        //-     .attrTween("transform", delta(plane, route.node()))
-        //-     //- .each("end", destinationPulse(route, this))
-        //-     .remove();
+      function transition(route, trail, color) {
+        let l = route.node().getTotalLength();
+        let duration = l*5;
             
         trail.transition()
             .duration(duration)
             .attrTween("stroke-dasharray", trailDelta)
-            .on("end", destinationPulse(route, duration))
+            .on("end", destinationPulse(route, duration, color))
             .remove();     
       }
 
-      function destinationPulse(route, delayDuration){
+      function destinationPulse(route, delayDuration, color){
         let dataCircle = route.datum();
-        let pointDestination = projection(dataCircle.coordinates[1]);
+        let pointDestination = projection(dataCircle[1]);
           
         svg.append("circle")
           .datum(dataCircle)
           .attr("cx", pointDestination[0])
           .attr("cy", pointDestination[1])
-          .attr("r", 0)
+          .attr("r", 2)
           .style("class", "destCircleMouse")
-          .style("fill", "white")
+          .style("fill", color)
           .style("fill-opacity", "1")
           .transition()
           .delay(delayDuration)
           .duration(100)
-          .attr("r", "3px")
+          .attr("r", 3)
           .on("end", function (d) {
             d3.select(this)
               .transition()
@@ -194,51 +246,78 @@ html
         
       var defaultCity = "Indonesia";
 
-      function fly(origin, destination) {
-        if(origin == "UNDEFINED")
+      function fly(origin, destination, color) {
+        if(!capitalCities[origin])
           origin = defaultCity;
-        if(destination == "UNDEFINED")
+        if(!capitalCities[destination])
           destination = defaultCity;
 
-        var route = svg.append("path")
-                      .datum({type: "LineString", coordinates: [capitalCities[origin], capitalCities[destination]]})
+        //ref: https://stackoverflow.com/a/56568406
+        let route = svg.append("path")
+                      .datum([capitalCities[origin], capitalCities[destination]])
                       .attr("class", "route")
-                      .attr("d", path);
+                      .attr("d", line);
           
-        var trail = svg.append("path")
-                      .datum({type: "LineString", coordinates: [capitalCities[origin], capitalCities[destination]]})
+        let trail = svg.append("path")
+                      .datum([capitalCities[origin], capitalCities[destination]])
                       .attr("class", "trail")
-                      .attr("d", path);               
+                      .attr("d", line)
+                      .style("stroke-width", 1.5)
+                      .style("stroke", color);               
 
-        var plane = svg.append("path")
-                      .attr("class", "plane")
-                      .attr("d", "M-3.837,3.457l-24.399,48.587c-2.322,4.625-0.149,7.31,4.856,5.994L0.366,51.8l22.979,6.185    c5.001,1.346,7.202-1.333,4.923-5.982L4.497,3.499C2.217-1.15-1.515-1.168-3.837,3.457z")
-                      .attr("width", "20px")
-                      .attr("height", "20px");
-
-        transition(plane, route, trail);
+        transition(route, trail, color);
       }
 
+      let colorAttack = {
+        "Consecutive TCP small segments exceeding threshold": "Turquoise",
+        "Reset outside window": "Blue",
+        "(spp_ssh) Protocol mismatch": "Green",
+        "(http_inspect) LONG HEADER": "Lime",
+        "(http_inspect) UNESCAPED SPACE IN HTTP URI": "DarkRed",
+        "Bad segment, adjusted size <= 0": "Aqua",
+        "(http_inspect) TOO MANY PIPELINED REQUESTS": "Gold",
+        "(spp_sdf) SDF Combination Alert": "PaleGreen",
+        "(http_inspect) INVALID CONTENT-LENGTH OR CHUNK SIZE": "RoyalBlue",
+        "(http_inspect) NO CONTENT-LENGTH OR TRANSFER-ENCODING IN HTTP RESPONSE": "Tomato"
+      };
+
       function flyRandom(){
-        let rand1 = Math.floor(Math.random() * Math.floor(240));
-        let rand2 = Math.floor(Math.random() * Math.floor(240));
+        let rand1 = Math.floor(Math.random() * Math.floor(lenCapitalCities));
+        let rand2 = Math.floor(Math.random() * Math.floor(lenCapitalCities));
         let rand1test = rand1 == 226 || rand1 == 227;
         let rand2test = rand2 == 226 || rand2 == 227;
-        if(rand1 != rand2 && !rand1test && !rand2test)
-          fly(rand1, rand2);
+        if(rand1 != rand2 && !rand1test && !rand2test){
+          let colorVal = "hsl(" + 360 * Math.random() + ',' +
+              (25 + 70 * Math.random()) + '%,' + 
+              (50 + 10 * Math.random()) + '%)';
+          fly(rand1, rand2, colorVal);
+        }
       }
 
       function flyX(d){
         //data = JSON.parse(d);
-        console.log(d);
-        if(d._id.src_country == "UNDEFINED")
-          d._id.src_country = defaultCity;
-        if(d._id.dest_country == "UNDEFINED")
-          d._id.dest_country = defaultCity;
-        fly(d._id.src_country, d._id.dest_country);
+        //- console.log(d);
+        if(d.src_country == "UNDEFINED")
+          d.src_country = defaultCity;
+        if(d.dest_country == "UNDEFINED")
+          d.dest_country = defaultCity;
+        fly(d.src_country, d.dest_country);
+        let color = colorAttack[d.alert_message];
+        if(!color){
+          color = "White";
+          //generate random color
+          let colorVal = "hsl(" + 360 * Math.random() + ',' +
+              (25 + 70 * Math.random()) + '%,' + 
+              (50 + 10 * Math.random()) + '%)';
+          color = {alert_message: d.alert_message, color: colorVal};
+          colorAttack.push(color);
+          // console.log(color);
+        }
+        fly(d.src_country, d.dest_country, color);
+        updateTable(d, color);
       }
 
-      function loaded(error, countries, airports) {
+      function loaded(countries, capitals) {
         svg.append("g")
           .attr("class", "countries")
           .selectAll("path")
@@ -248,15 +327,15 @@ html
           .attr("d", path);
 
         svg.append("g")
-          .attr("class", "airports")
+          .attr("class", "capitals")
           .selectAll("path")
-          .data(topojson.feature(airports, airports.objects.capitals).features)
+          .data(topojson.feature(capitals, capitals.objects.capitals).features)
           .enter()
           .append("path")
           .attr("id", function(d) {return d.id;})
           .attr("d", path);
 
-        var geos = topojson.feature(airports, airports.objects.capitals).features;
+        let geos = topojson.feature(capitals, capitals.objects.capitals).features;
         for (i in geos) {
           if(useDummy){
             capitalCities[i] = geos[i].geometry.coordinates;
@@ -264,38 +343,58 @@ html
             capitalCities[geos[i].properties.country] = geos[i].geometry.coordinates;
           }
         }
-        var lenCapitalCities = capitalCities.length;
-        console.log(capitalCities);
+        let lenCapitalCities = capitalCities.length;
+        // console.log(geos);
         
-        if(useDummy){
-          //- setInterval(function() {
-          //-   //- flyRandom();
-          //-   console.log("s")
-          //- }, 100);
-        } else {
-          //- var socket = io();
-          //- socket.on('mongoStream', function (data) {
-          //-     console.log(data.fullDocument.src_country, data.fullDocument.dest_country);
-          //-     fly(data.fullDocument.src_country, data.fullDocument.dest_country);
-          //- });
-        }
+        
       }
       
+      let tableRows = 0, maxRow = 5;
+      function updateTable(data, color){
+
+        //insert new row
+        $("<tr>"+
+          "<td>"+ data.src_ip + "(" + data.src_country + ")" + "</td>"+
+          "<td>"+ data.dest_ip + "(" + data.dest_country + ")" +"</td>"+
+          "<td style='color:"+ color +";'>"+ data.alert_message +"</td>"+
+          "<td>"+ data.value +"</td>"+
+          "</tr>")
+          .hide().appendTo("#stats").show("slow");
+
+        tableRows++;
+        if(tableRows > maxRow || tableRows == 1)
+          //remove first row
+          $("#stats tr:first").remove();
+      }
+
       $(function() {
-        queue().defer(d3.json, "../json/countries2.topo.json")
-              .defer(d3.json, "../json/capitals.topo.json")
-              .await(loaded);
+        //- queue().defer(d3.json, "../json/countries2.topo.json")
+        //-       .defer(d3.json, "../json/capitals.topo.json")
+        //-       .await(loaded);
+        //ref: https://stackoverflow.com/a/49534634
+        var files = ["../json/countries2.topo.json", "../json/capitals.topo.json"];
+        var promises = [];
+        files.forEach(function(url) {
+            promises.push(d3.json(url))
+        });
+
+        Promise.all(promises)
+          .then(function(values) {
+            loaded(values[0], values[1])
+          })
+          .catch(error => { 
+            console.error(error.message)
+          });      
               
-        var width = 938;
-        var height = 620;
-        currentWidth = $("#map").width();
-        console.log(height, width);
-        svg.attr("width", currentWidth);
-        svg.attr("height", currentWidth * height / width);
+        //- var width = 938;
+        //- var height = 620;
+        //- currentWidth = $("#map").width();
+        //- console.log(height, width);
+        //- svg.attr("width", currentWidth);
+        //- svg.attr("height", currentWidth * height / width);
       });
 
     script.
-      src = {};
       var formatDateIntoYear = d3.timeFormat("%H:%M %m/%y");
       var formatDate = d3.timeFormat("%b %Y");
       var parseDate = d3.timeParse("%m-%d-%H");
@@ -303,65 +402,71 @@ html
       var startDate = moment().subtract(1, 'day').toDate(),
         endDate = moment().toDate();
       var margin = { top: 0, right: 50, bottom: 0, left: 30 },
-        width = 960 - margin.left - margin.right,
-        height = 100 - margin.top - margin.bottom;
+        widthVis = width - margin.left - margin.right,
+        heightVis = 100 - margin.top - margin.bottom;
       var vis = d3.select("#vis")
         .append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom);
+        .attr("width", widthVis + margin.left + margin.right)
+        .attr("height", heightVis + margin.top + margin.bottom);
       ////////// slider //////////
       var moving = false;
       var currentValue = 0;
-      var targetValue = width;
+      var targetValue = widthVis;
       var playButton = d3.select("#play-button");
-      var x = d3.scaleTime()
-        .domain([startDate, endDate])
-        .range([0, targetValue])
-        .clamp(true);
-      var slider = vis.append("g")
-        .attr("class", "slider")
-        .attr("transform", "translate(" + margin.left + "," + height / 2 + ")");
-      slider.append("line")
-        .attr("class", "track")
-        .attr("x1", x.range()[0])
-        .attr("x2", x.range()[1])
-        .select(function () { return this.parentNode.appendChild(this.cloneNode(true)); })
-        .attr("class", "track-inset")
-        .select(function () { return this.parentNode.appendChild(this.cloneNode(true)); })
-        .attr("class", "track-overlay")
-        .call(d3.drag()
-          .on("start.interrupt", function () { slider.interrupt(); })
-          .on("start drag", function () {
-            currentValue = d3.event.x;
-            update(x.invert(currentValue));
-          })
-        );
-      slider.insert("g", ".track-overlay")
-        .attr("class", "ticks")
-        .attr("transform", "translate(0," + 18 + ")")
-        .selectAll("text")
-        .data(x.ticks(10))
-        .enter()
-        .append("text")
-        .style("fill", "#fff")
-        .attr("x", x)
-        .attr("y", 10)
-        .attr("text-anchor", "middle")
-        .text(function (d) { return formatDateIntoYear(d); });
-      var handle = slider.insert("circle", ".track-overlay")
-        .attr("class", "handle")
-        .attr("r", 9);
-      var label = slider.append("text")
-        .style("fill", "#fff")
-        .attr("class", "label")
-        .attr("text-anchor", "middle")
-        .text(formatDate(startDate))
-        .attr("transform", "translate(0," + (-25) + ")")
+      var x, slider, handle, label;
+      function initiateSlider(startDate){
+        x = d3.scaleTime()
+          .domain([startDate, endDate])
+          .range([0, targetValue])
+          .clamp(true);
+        slider = vis.append("g")
+          .attr("class", "slider")
+          .attr("transform", "translate(" + margin.left + "," + heightVis / 2 + ")");
+        slider.append("line")
+          .attr("class", "track")
+          .attr("x1", x.range()[0])
+          .attr("x2", x.range()[1])
+          .select(function () { return this.parentNode.appendChild(this.cloneNode(true)); })
+          .attr("class", "track-inset")
+          .select(function () { return this.parentNode.appendChild(this.cloneNode(true)); })
+          .attr("class", "track-overlay")
+          .call(d3.drag()
+            .on("start.interrupt", function (){ slider.interrupt(); })
+            .on("start drag", function (){
+              currentValue = d3.event.x;
+              update(x.invert(currentValue));
+            })
+          );
+        slider.insert("g", ".track-overlay")
+          .attr("class", "ticks")
+          .attr("transform", "translate(0," + 18 + ")")
+          .selectAll("text")
+          .data(x.ticks(10))
+          .enter()
+          .append("text")
+          .style("fill", "#fff")
+          .attr("x", x)
+          .attr("y", 10)
+          .attr("text-anchor", "middle")
+          .text(function (d) { return formatDateIntoYear(d); });
+        handle = slider.insert("circle", ".track-overlay")
+          .attr("class", "handle")
+          .attr("r", 9);
+        label = slider.append("text")
+          .style("fill", "#fff")
+          .attr("class", "label")
+          .attr("text-anchor", "middle")
+          .text(formatDate(startDate))
+          .attr("transform", "translate(0," + (-25) + ")")
+      }  
       ////////// plot //////////
+      let oldData = 0;
       var dataset;
-      d3.json("/api/daily", function (data) {
+      d3.json("/json/testFly.json").then(function (data) {
         dataset = data;
-        drawPlot(dataset);
+        //- console.log(dataset);
+        startDate = moment(dataset[0].time).toDate();
+        initiateSlider(startDate);
         playButton
           .attr("disabled", null)
           .text("Play")
@@ -370,7 +475,6 @@ html
             if (button.text() == "Pause") {
               moving = false;
               clearInterval(timer);
-              // timer = 0; // for endless loop
               button.text("Play");
             } else {
               moving = true;
@@ -379,54 +483,65 @@ html
             }
             console.log("Slider moving: " + moving);
           })
-      })
+      });
       function step() {
         update(x.invert(currentValue));
         currentValue = currentValue + (targetValue / 151);
+        //- console.log(currentValue);
         if (currentValue > targetValue) {
           moving = false;
-          currentValue = 0;
-          clearInterval(timer);
-          // timer = 0;
+          currentValue = oldData = 0;
+          clearInterval(timer); // disable this for endless loop
+          update(x.invert(currentValue));
           playButton.text("Play");
           console.log("Slider moving: " + moving);
         }
       }
       function drawPlot(data) {
-        console.log(data);
+        flyX(data);
       }
-      let eve = 0;
       function update(h) {
-        // update position and text of label according to slider scale
+        // update handle position and text of label according to slider scale
         handle.attr("cx", x(h));
         label
           .attr("x", x(h))
           .text(formatDate(h));
         // filter data set and redraw plot
         let newData = dataset.filter(function (d) {
-          //- let date = parseDate(d._id.month + "-" + d._id.day + "-" + d._id.hour);
-          let date = momentDate(d._id.month, d._id.day, d._id.hour);
+          //- let date = momentDate(d._id.month, d._id.day, d._id.hour);
+          let date = moment(d.time).toDate();
           //- console.log(date);
           return date < h;
-        })
-        let index = newData.length - 1;
-        let theData = newData[index];
-        console.log(++eve);
-        //- drawPlot(newData);
-        setTimeout(function()
-        {
-            flyX(theData);
-            //- console.log(JSON.stringify(theData))
-              //voila!
-        }, 10);
+        });
+
+        if(oldData && newData.length == oldData){
+          return;
+        }
+          
+        //- console.log(newData);
+        let index, goingForward = newData.length > oldData;
+        if(goingForward)
+          index = oldData - newData.length;
+        else
+          index = newData.length - oldData;
         
+        newData = newData.slice(index);
+        //- console.log(`old: ${oldData}, new: ${newData.length}`);
+        for(let event of newData){
+          drawPlot(event);
+        }
+
+        if(goingForward)
+          oldData = oldData - index;
+        else
+          oldData = oldData + index;
       }
 
       $(function() {
         $(window).resize(function() {
-          curWidth = $("#vis").width();
-          curHeight = $("#vis").height();
-          vis.attr("width", curWidth + margin.left + margin.right);
-          vis.attr("height", curHeight + margin.top + margin.bottom);
+          //- curWidth = $("#vis").width();
+          //- curHeight = $("#vis").height();
+          //- vis.attr("width", curWidth + margin.left + margin.right);
+          //- vis.attr("height", curHeight + margin.top + margin.bottom);
         });
       });
