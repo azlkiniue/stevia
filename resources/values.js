@@ -8,7 +8,7 @@ const ip = {
 const values = {
   port : "1228",
   enableSSH: false,
-  mongoUrl : "mongodb://admin:jarkoM@"+ ip.bigData +":27017/",
+  mongoUrl : "mongodb://admin:jarkoM@"+ ip.local +":27018/",
   mongoDbName : "stevia",
   mongoCollection : "event1s",
   sshConf: {
