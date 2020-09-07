@@ -103,3 +103,6 @@ typings/
 .history
 
 # End of https://www.gitignore.io/api/node,visualstudiocode
+
+# Ignore classified file
+resources/values.js

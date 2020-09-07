@@ -8,9 +8,10 @@ const ip = {
 const values = {
   port : "1228",
   enableSSH: false,
-  mongoUrl : "mongodb://admin:jarkoM@"+ ip.local +":27018/",
+  mongoUrl : `mongodb://hduser:jarkoM@${ip.bigData}:32781/`,
   mongoDbName : "stevia",
-  mongoCollection : "event1s",
+  mongoCollection : "stevia-v0.1",
+  pgUrl : `postgresql://hduser:jarkoM@${ip.bigData}:32773/hduser`,
   sshConf: {
     username:'hduser',
     password:'jarkoM',
