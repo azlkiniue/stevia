@@ -11,7 +11,7 @@ var projection = d3.geoMercator()
 var path = d3.geoPath()
             .pointRadius(2)
             .projection(projection);
-  
+
 //ref: https://stackoverflow.com/a/56568406
 var curve = function(context) {
   var custom = d3.curveLinear(context);
@@ -68,11 +68,11 @@ if(useDummy){
   var capitalCities = {};
 }
 
-  function delta(plane, path) {
-    let l = path.getTotalLength();
-    //let plane = plane;
-    return function(i) {
-      return function(t) {
+function delta(plane, path) {
+  let l = path.getTotalLength();
+  //let plane = plane;
+  return function(i) {
+    return function(t) {
       let p = path.getPointAtLength(t * l);
 
       let t2 = Math.min(t + 0.05, 1);
@@ -103,13 +103,13 @@ function transition(route, trail, color) {
       .duration(duration)
       .attrTween("stroke-dasharray", trailDelta)
       .on("end", destinationPulse(route, duration, color))
-      .remove();       
+      .remove();     
 }
 
 function destinationPulse(route, delayDuration, color){
   let dataCircle = route.datum();
   let pointDestination = projection(dataCircle[1]);
-  //- console.log(color);
+    
   svg.append("circle")
     .datum(dataCircle)
     .attr("cx", pointDestination[0])
@@ -128,30 +128,85 @@ function destinationPulse(route, delayDuration, color){
         .duration(500)
         .attr("r", 10) // circle radius end
         .style("fill-opacity", "0")
-        .on("end", function() {
-          this.remove();
+        .on("end", function() { 
+          this.remove(); 
         })
     });
 
     route.remove();
 }
+  
+var defaultCity = "Indonesia";
 
 function fly(origin, destination, color) {
-  //- console.log(color)
+  if(!capitalCities[origin])
+    origin = defaultCity;
+  if(!capitalCities[destination])
+    destination = defaultCity;
+
   //ref: https://stackoverflow.com/a/56568406
   let route = svg.append("path")
                 .datum([capitalCities[origin], capitalCities[destination]])
                 .attr("class", "route")
                 .attr("d", line);
-
+    
   let trail = svg.append("path")
                 .datum([capitalCities[origin], capitalCities[destination]])
                 .attr("class", "trail")
                 .attr("d", line)
                 .style("stroke-width", 1.5)
-                .style("stroke", color);
+                .style("stroke", color);               
 
   transition(route, trail, color);
+}
+
+let colorAttack = {
+  "Consecutive TCP small segments exceeding threshold": "Turquoise",
+  "Reset outside window": "Blue",
+  "(spp_ssh) Protocol mismatch": "Green",
+  "(http_inspect) LONG HEADER": "Lime",
+  "(http_inspect) UNESCAPED SPACE IN HTTP URI": "DarkRed",
+  "Bad segment, adjusted size <= 0": "Aqua",
+  "(http_inspect) TOO MANY PIPELINED REQUESTS": "Gold",
+  "(spp_sdf) SDF Combination Alert": "PaleGreen",
+  "(http_inspect) INVALID CONTENT-LENGTH OR CHUNK SIZE": "RoyalBlue",
+  "(http_inspect) NO CONTENT-LENGTH OR TRANSFER-ENCODING IN HTTP RESPONSE": "Tomato"
+};
+
+function flyRandom(){
+  let rand1 = Math.floor(Math.random() * Math.floor(lenCapitalCities));
+  let rand2 = Math.floor(Math.random() * Math.floor(lenCapitalCities));
+  let rand1test = rand1 == 226 || rand1 == 227;
+  let rand2test = rand2 == 226 || rand2 == 227;
+  if(rand1 != rand2 && !rand1test && !rand2test){
+    let colorVal = "hsl(" + 360 * Math.random() + ',' +
+        (25 + 70 * Math.random()) + '%,' + 
+        (50 + 10 * Math.random()) + '%)';
+    fly(rand1, rand2, colorVal);
+  }
+}
+
+function flyX(d){
+  //data = JSON.parse(d);
+  //- console.log(d);
+  if(d.src_country == "UNDEFINED")
+    d.src_country = defaultCity;
+  if(d.dest_country == "UNDEFINED")
+    d.dest_country = defaultCity;
+  fly(d.src_country, d.dest_country);
+  let color = colorAttack[d.alert_message];
+  if(!color){
+    color = "White";
+    //generate random color
+    let colorVal = "hsl(" + 360 * Math.random() + ',' +
+        (25 + 70 * Math.random()) + '%,' + 
+        (50 + 10 * Math.random()) + '%)';
+    color = {alert_message: d.alert_message, color: colorVal};
+    colorAttack.push(color);
+    // console.log(color);
+  }
+  fly(d.src_country, d.dest_country, color);
+  updateTable(d, color);
 }
 
 function loaded(countries, capitals) {
@@ -177,63 +232,13 @@ function loaded(countries, capitals) {
     if(useDummy){
       capitalCities[i] = geos[i].geometry.coordinates;
     } else {
-      capitalCities[geos[i].id] = geos[i].geometry.coordinates;
+      capitalCities[geos[i].properties.country] = geos[i].geometry.coordinates;
     }
   }
   let lenCapitalCities = capitalCities.length;
   // console.log(geos);
-    
-  let defaultCountry = "ID";
-  let colorAttack = {
-    "Consecutive TCP small segments exceeding threshold": "Turquoise",
-    "Reset outside window": "LightSkyBlue",
-    "(spp_ssh) Protocol mismatch": "GreenYellow",
-    "(http_inspect) LONG HEADER": "SpringGreen",
-    "(http_inspect) UNESCAPED SPACE IN HTTP URI": "LightSalmon",
-    "Bad segment, adjusted size <= 0": "Aqua",
-    "(http_inspect) TOO MANY PIPELINED REQUESTS": "Gold",
-    "(spp_sdf) SDF Combination Alert": "PaleGreen",
-    "(http_inspect) INVALID CONTENT-LENGTH OR CHUNK SIZE": "PowderBlue",
-    "(http_inspect) NO CONTENT-LENGTH OR TRANSFER-ENCODING IN HTTP RESPONSE": "Orange"
-  };
-  if(useDummy){
-    setInterval(function() {
-      let rand1 = Math.floor(Math.random() * Math.floor(lenCapitalCities));
-      let rand2 = Math.floor(Math.random() * Math.floor(lenCapitalCities));
-      let rand1test = rand1 == 226 || rand1 == 227;
-      let rand2test = rand2 == 226 || rand2 == 227;
-      if(rand1 != rand2 && !rand1test && !rand2test){
-        let colorVal = "hsl(" + 360 * Math.random() + ',' +
-            (25 + 70 * Math.random()) + '%,' + 
-            (50 + 10 * Math.random()) + '%)';
-        fly(rand1, rand2, colorVal);
-      }
-    }, 100);
-  } else {
-    let socket = io();
-    socket.on('mongoStream', function (data) {
-      let event = data.fullDocument;
-      // console.log(event);
-      // console.log(colorAttack);
-      if(event.src_country_iso_code == null)
-        event.src_country_iso_code = defaultCountry;
-      if(event.dest_country_iso_code == null)
-        event.dest_country_iso_code = defaultCountry;
-      
-      
-      let color = colorAttack[event.alert_message];
-      if(!color){
-        //generate random color
-        let colorVal = "hsl(" + 360 * Math.random() + ',' +
-            (25 + 70 * Math.random()) + '%,' + 
-            (50 + 10 * Math.random()) + '%)';
-        colorAttack[event.alert_message] = colorVal;
-        color = colorVal;
-      }
-      fly(event.src_country_iso_code, event.dest_country_iso_code, color);
-      updateTable(event, color);
-    });
-  }
+  
+  
 }
 
 let tableRows = 0, maxRow = 5;
@@ -241,10 +246,10 @@ function updateTable(data, color){
 
   //insert new row
   $("<tr>"+
-    "<td>"+ data.src_ip + "(" + data.src_country_name?.en + ")" + "</td>"+
-    "<td>"+ data.dest_ip + "(" + data.dest_country_name?.en + ")" +"</td>"+
+    "<td>"+ data.src_ip + "(" + data.src_country + ")" + "</td>"+
+    "<td>"+ data.dest_ip + "(" + data.dest_country + ")" +"</td>"+
     "<td style='color:"+ color +";'>"+ data.alert_message +"</td>"+
-    // "<td>"+ data.value +"</td>"+
+    "<td>"+ data.value +"</td>"+
     "</tr>")
     .hide().appendTo("#stats").show("slow");
 
@@ -255,11 +260,9 @@ function updateTable(data, color){
 }
 
 $(function() {
-
-  //- d3.queue().defer(d3.json, "../json/countries2.topo.json")
+  //- queue().defer(d3.json, "../json/countries2.topo.json")
   //-       .defer(d3.json, "../json/capitals.topo.json")
   //-       .await(loaded);
-
   //ref: https://stackoverflow.com/a/49534634
   var files = ["../json/countries2.topo.json", "../json/capitals.topo.json"];
   var promises = [];
@@ -273,11 +276,12 @@ $(function() {
     })
     .catch(error => { 
       console.error(error.message)
-    });
-
-  $(window).resize(function() {
-    currentWidth = $("#map").width();
-    svg.attr("width", currentWidth);
-    svg.attr("height", currentWidth * height / width);
-  });
+    });      
+        
+  //- var width = 938;
+  //- var height = 620;
+  //- currentWidth = $("#map").width();
+  //- console.log(height, width);
+  //- svg.attr("width", currentWidth);
+  //- svg.attr("height", currentWidth * height / width);
 });

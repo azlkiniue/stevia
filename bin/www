@@ -5,7 +5,8 @@
  */
 
 var app = require('../app');
-var db = require('../db/mongo');
+var dbMongo = require('../db/mongo');
+var dbPostgre = require('../db/postgre');
 var socket = require('../socket/socket');
 var values = require('../resources/values');
 var debug = require('debug')('stevia:server');
@@ -45,18 +46,22 @@ if (values.enableSSH) {
 
 
 function connectDb() {
-  db.connect(function (error) {
+  app.locals.db = {};
+  
+  dbMongo.connect(function (error) {
     if (error) throw error;
-    else db.listenChangeStream(function (changedData) {
+    else dbMongo.listenChangeStream(function (changedData) {
       socket.notifyUpdateMongo(changedData);
     });
 
-    app.locals.db = db;
+    app.locals.db.mongo = dbMongo;
   
     server.listen(port);
     server.on('error', onError);
     server.on('listening', onListening);
   });
+      
+  app.locals.db.pg = dbPostgre;
 }
 
 

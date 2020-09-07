@@ -1,24 +1,21 @@
 const moment = require('moment');
-const firstBy = require('thenby');
+const values = require('../resources/values');
 
 exports.getAggregateDaily = function (req, res) {
-  const db = req.app.locals.db.get();
+  const db = req.app.locals.db.mongo.get();
   let dayLimit = moment().subtract(1, 'day');
   
-  sendAggregate(db, dayLimit).toArray(function (err, event) {
+  sendAggregate(db, dayLimit, 15, "minute").toArray(function (err, event) {
     if (err) {
       res.send(err);
     } 
     else
-      event.sort(function (a, b) {
-        return a._id.month - b._id.month || a._id.day - b._id.day || a._id.hour - b._id.hour;
-      });
       res.json(event);
   });
 }
 
 exports.getAggregateWeekly = function (req, res) {
-  const db = req.app.locals.db.get();
+  const db = req.app.locals.db.mongo.get();
   let dayLimit = moment().subtract(1, "week");
   
   sendAggregate(db, dayLimit).toArray(function (err, event) {
@@ -26,15 +23,12 @@ exports.getAggregateWeekly = function (req, res) {
       res.send(err);
     } 
     else
-      event.sort(function (a, b) {
-        return a._id.month - b._id.month || a._id.day - b._id.day || a._id.hour - b._id.hour;
-      });
       res.json(event);
   });
 }
 
 exports.getAggregateMonthly = function (req, res) {
-  const db = req.app.locals.db.get();
+  const db = req.app.locals.db.mongo.get();
   let dayLimit = moment().subtract(1, "month");
   
   sendAggregate(db, dayLimit).toArray(function (err, event) {
@@ -42,15 +36,12 @@ exports.getAggregateMonthly = function (req, res) {
       res.send(err);
     } 
     else
-      event.sort(function (a, b) {
-        return a._id.month - b._id.month || a._id.day - b._id.day || a._id.hour - b._id.hour;
-      });
       res.json(event);
   });
 }
 
 exports.getByQuery = function (req, res) {
-  const db = req.app.locals.db.get();
+  const db = req.app.locals.db.mongo.get();
   let dayLimit = moment(req.query.date, "YYYY-MM-DD");
 
   sendAggregate(db, dayLimit).toArray(function (err, event) {
@@ -58,66 +49,52 @@ exports.getByQuery = function (req, res) {
       res.send(err);
     } 
     else
-      event.sort(function (a, b) {
-        return a._id.month - b._id.month || a._id.day - b._id.day || a._id.hour - b._id.hour;
-      });
       res.json(event);
   });
 }
 
-const sendAggregate = function (db, dayLimit) {
-  return db.collection('event').aggregate([
+const sendAggregate = function (db, dayLimit, timeAmount, timeUnit) {
+  let unit = {};
+  unit[`$${timeUnit}`] = "$timestamp";
+  const granulity = { "$subtract": [
+    unit,
+    { "$mod": [unit, timeAmount ]}
+  ]};
+  return db.collection(values.mongoCollection).aggregate([
     {
+      $match: {timestamp: {$gt: dayLimit.toDate()}}
+    }, {
       $group: {
         _id: {
-          month: "$month", 
-          day: "$day", 
-          hour: "$hour", 
-          src_country: "$src_country", 
-          dest_country: "$dest_country", 
+          interval: {
+            "$subtract": [
+                { "$subtract": [ "$timestamp", new Date("1970-01-01") ] },
+                { "$mod": [
+                    { "$subtract": [ "$timestamp", new Date("1970-01-01") ] },
+                    1000 * 60 * 15
+                ]}
+            ]
+        },
+          time: {"$min": "$timestamp"},
+          src_country: "$src_country_iso_code", 
+          dest_country: "$dest_country_iso_code", 
           alert_message: "$alert_message"
-        }, 
+        },
         count: {
           $sum: 1
         }
       }
     }, {
-      $match: {
-        $or: [
-          {
-            "_id.month" : { $gt : dayLimit.month()+1 }
-          },
-          {
-            $and: [
-              {
-                "_id.day" : { $gt : dayLimit.date() }
-              },
-              {
-                "_id.month" : dayLimit.month()+1
-              }
-            ]
-          },
-          {
-            $and: [
-              {
-                "_id.hour" : { $gt : dayLimit.hour() }
-              },
-              {
-                "_id.day" : dayLimit.date() 
-              },
-              {
-                "_id.month" : dayLimit.month()+1
-              }
-            ]
-          }
-        ]
-      }
-    }, {
       $sort: {
-        count: -1
+        '_id.interval': -1
       }
     }, {
       $limit: 150
+    }, {
+      $sort: {
+        '_id.time': 1
+      }
     }
-  ])
+  ],
+  {allowDiskUse: true});
 }
