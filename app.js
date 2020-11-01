@@ -26,6 +26,7 @@ app.use('/js', express.static(path.join(__dirname, 'node_modules/socket.io-clien
 app.use('/js', express.static(path.join(__dirname, 'node_modules/moment/min'))); // redirect moment.js
 app.use('/js', express.static(path.join(__dirname, 'node_modules/topojson-client/dist/'))); // redirect topojson-client
 app.use('/css', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/css/'))); // redirect CSS bootstrap
+app.use('/flags', express.static(path.join(__dirname, 'node_modules/country-flag-icons/'))); // redirect flags country
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);

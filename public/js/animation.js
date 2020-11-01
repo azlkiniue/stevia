@@ -205,7 +205,7 @@ function loaded(countries, capitals) {
       if(rand1 != rand2 && !rand1test && !rand2test){
         let colorVal = "hsl(" + 360 * Math.random() + ',' +
             (25 + 70 * Math.random()) + '%,' + 
-            (50 + 10 * Math.random()) + '%)';
+            (85 + 10 * Math.random()) + '%)';
         fly(rand1, rand2, colorVal);
       }
     }, 100);
@@ -215,22 +215,22 @@ function loaded(countries, capitals) {
       let event = data.fullDocument;
       // console.log(event);
       // console.log(colorAttack);
-      if(event.src_country_iso_code == null)
-        event.src_country_iso_code = defaultCountry;
-      if(event.dest_country_iso_code == null)
-        event.dest_country_iso_code = defaultCountry;
+      if(!event.src_country_iso)
+        event.src_country_iso = defaultCountry;
+      if(!event.dest_country_iso)
+        event.dest_country_iso = defaultCountry;
       
       
-      let color = colorAttack[event.alert_message];
+      let color = colorAttack[event.alert_msg];
       if(!color){
         //generate random color
         let colorVal = "hsl(" + 360 * Math.random() + ',' +
             (25 + 70 * Math.random()) + '%,' + 
-            (50 + 10 * Math.random()) + '%)';
-        colorAttack[event.alert_message] = colorVal;
+            (65 + 10 * Math.random()) + '%)';
+        colorAttack[event.alert_msg] = colorVal;
         color = colorVal;
       }
-      fly(event.src_country_iso_code, event.dest_country_iso_code, color);
+      fly(event.src_country_iso, event.dest_country_iso, color);
       updateTable(event, color);
     });
   }
@@ -241,9 +241,10 @@ function updateTable(data, color){
 
   //insert new row
   $("<tr>"+
-    "<td>"+ data.src_ip + "(" + data.src_country_name?.en + ")" + "</td>"+
-    "<td>"+ data.dest_ip + "(" + data.dest_country_name?.en + ")" +"</td>"+
-    "<td style='color:"+ color +";'>"+ data.alert_message +"</td>"+
+    `<td><span class="flag:${data.src_country_iso}"></span> ${data.src_ip} (${data.src_country})</td>`+
+    `<td><span class="flag:${data.dest_country_iso}"></span> ${data.dest_ip} (${data.dest_country})</td>`+
+    `<td style="color:${color};">${data.alert_msg}</td>`+
+    `<td style="color:${color};">${moment(data.ts).format('kk:mm:ss.SSS')}</td>`+
     // "<td>"+ data.value +"</td>"+
     "</tr>")
     .hide().appendTo("#stats").show("slow");
