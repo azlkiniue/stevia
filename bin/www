@@ -35,8 +35,8 @@ var tunnel = require('tunnel-ssh');
 
 if (values.enableSSH) {
   var serv = tunnel(values.sshConf, function (error, serv) {
-    if(error){
-        console.log("SSH connection error: " + error);
+    if (error) {
+      console.log("SSH connection error: " + error);
     }
     connectDb();
   });
@@ -47,7 +47,7 @@ if (values.enableSSH) {
 
 function connectDb() {
   app.locals.db = {};
-  
+
   dbMongo.connect(function (error) {
     if (error) throw error;
     else dbMongo.listenChangeStream(function (changedData) {
@@ -55,12 +55,12 @@ function connectDb() {
     });
 
     app.locals.db.mongo = dbMongo;
-  
+
     server.listen(port);
     server.on('error', onError);
     server.on('listening', onListening);
   });
-      
+
   app.locals.db.pg = dbPostgre;
 }
 
