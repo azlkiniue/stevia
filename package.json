@@ -9,7 +9,7 @@
     "bootstrap": "^4.5.2",
     "cookie-parser": "^1.4.5",
     "country-flag-icons": "^1.2.6",
-    "d3": "^5.16.0",
+    "d3": "^7.6.1",
     "debug": "^4.1.1",
     "express": "^4.17.1",
     "http-errors": "^1.8.0",
