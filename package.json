@@ -11,7 +11,7 @@
     "country-flag-icons": "^1.2.6",
     "d3": "^5.16.0",
     "debug": "^4.1.1",
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "http-errors": "^1.8.0",
     "inject-tunnel-ssh": "0.0.5",
     "jquery": "^3.5.0",
